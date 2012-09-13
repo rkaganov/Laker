@@ -2,24 +2,28 @@
 # \
 exec tclsh "$0" ${1+"$@"}
 
-#--------------------------------------------------
-#$Header: /nfs/local/eda/eda_disk03/Layout/Custom/Laker/Scripts/RCS/trans_place.tcl,v 1.1 2012/03/04 09:11:00 cad Exp $
-#-------------------------------------------------- 
+$Id:$
 
 #--------------------------------------------------
 # Global variables
 #-------------------------------------------------- 
 set state flag
-set X 0
-set Y 0
+set start_X 0
+set start_Y 0
 
 proc Help {} {
-	puts " -csv       { csv file         } "
-	puts " -inst      { A B C ... X      } "
-	puts " -usr_space { user space value } "
-	puts " -L         { Transistor L     } "
-	puts " -W         { Transistor W     } "
-	puts " -out       { Output file      } "
+	puts {}
+	puts "Usage:"
+	puts {}
+	puts " -csv       : csv file                                 "
+	puts " -inst      : A B C ... X                              "
+	puts " -usr_space : user space value                         "
+	puts " -L         : Transistor L                             "
+	puts " -W         : Transistor W                             "
+	puts " -start_X   : Starting X coordinate. Default is \"0\"  "
+	puts " -start_Y   : Starting Y coordinate. Default is \"0\"  "
+	puts " -out       : Output file                              "
+	puts {}
 
 	exit
 }
@@ -40,6 +44,8 @@ if {$argc < 1 || $argv == "-h" || $argv == "-help" || $argv == "--help" } {
 					-usr_space { set state usr_space }
 					-L         { set state L         }
 					-W         { set state W         }
+					-start_X   { set state start_X   }
+					-start_Y   { set state start_Y   }
 					-out       { set state out       }
 				}
 			}
@@ -70,6 +76,14 @@ if {$argc < 1 || $argv == "-h" || $argv == "-help" || $argv == "--help" } {
 				set W $arg
 				set state flag
 			}
+			start_X {
+				set start_X $arg
+				set state flag
+			}
+			start_Y {
+				set start_Y $arg
+				set state flag
+			}
 		}
 	}
 }
@@ -91,6 +105,8 @@ foreach inst_file $inst {
 	set fh_${inst_file} [open $inst_file "r"]
 }
 
+set X $start_X
+set Y $start_Y
 
 while {[gets $fh_csv matrix] >= 0} {
 	foreach neo [split $matrix ,] {
@@ -99,15 +115,14 @@ while {[gets $fh_csv matrix] >= 0} {
 			gets [subst $$fh_current] instance
 			puts $fh_out "lakerFindObj -index 1 -type Transistor -searProp {Instance == {$instance}}"
 			puts $fh_out "lakerAttribute -index 1 -point ($X,$Y) -inst $instance"
-			set X [expr $X + [expr $L + 0.84]]
 #			puts -nonewline $fh_out "$instance,"
-		} else {
-			set X [expr $X + [expr $L + 0.84]]
-#			puts -nonewline $fh_out "_,"
 		}
+		set X [expr $X + [expr $L + 0.84]]
+		set X [format %#.2f $X]
 	}
-	set X 0
+	set X $start_X
 	set Y [expr $Y + [expr $W + $usr_space]]
+	set Y [format %#.2f $Y]
 	puts $fh_out "\n"
 }
 
